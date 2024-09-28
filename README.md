@@ -300,3 +300,7 @@ Link views to Settings page:
       ),
 ...
 ```
+
+## Step 7: Modify as you wish
+
+After SFRF did heavy lifting things, it your turn, modify as you like
