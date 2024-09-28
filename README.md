@@ -181,6 +181,8 @@ Copy and paste the SQL statements to in it and run. Make sure no error returned.
 
 You can go to Database -> Schema Visualizer to check the tables' relationships.
 
+![the-relationships](https://github.com/user-attachments/assets/24aeea7e-489a-487f-8ecd-7ef3b7e9854c)
+
 ## Step 2: Go to/Create `sqls` folder under `lib` of your Flutter project.
 
 ## Step 3: Create a `.sql` file with any name in `sqls` folder, and paste the SQL statements content into it.
@@ -303,4 +305,19 @@ Link views to Settings page:
 
 ## Step 7: Modify as you wish
 
-After SFRF did heavy lifting things, it your turn, modify as you like
+After SFRF did heavy lifting things, it your turn, modify as you like.
+
+At least there are 2 places for you to do something:
+
+1. The list view. Since SFRF can not predict what fields are available for displaying in ListTile, so it leave it to a default text:
+    
+    ![msedge_8oXSqBuMCV](https://github.com/user-attachments/assets/fbc118e8-8780-405d-abe1-28543100bd89)
+
+
+1. The dropdown lists. Due to the same reason, you should modify them to display correct info:
+    
+    ![msedge_9Q5Rn3RrSE](https://github.com/user-attachments/assets/300be4fb-9535-4ed6-ba08-ec05c6ef2d78)
+
+
+
+# Thanks for reading!
