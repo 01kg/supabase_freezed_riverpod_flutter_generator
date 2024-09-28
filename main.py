@@ -18,8 +18,6 @@ args = parser.parse_args()
 
 FLUTTER_PROJECT_ROOT_PATH = args.FLUTTER_PROJECT_ROOT_PATH
 
-# FLUTTER_PROJECT_ROOT_PATH = r"C:\Users\test\Documents\GitHub\test_generator"
-
 if not os.path.exists(FLUTTER_PROJECT_ROOT_PATH):
     raise FileNotFoundError(f"Directory not found: {FLUTTER_PROJECT_ROOT_PATH}")
 

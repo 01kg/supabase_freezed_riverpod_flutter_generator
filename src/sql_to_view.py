@@ -64,10 +64,6 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
     camel_table_name = snake_to_camel(snake_table_name)
     capitalized_camel_table_name = capitalize_camel_case(camel_table_name)
 
-    # print(f"Snake Table Name: {snake_table_name}")
-    # print(f"Camel Table Name: {camel_table_name}")
-    # print(f"Capitalized Camel Table Name: {capitalized_camel_table_name}")
-
     # Map SQL types to Dart types
     sql_to_dart_type_mapping = {
         "bigint": "int",
@@ -107,19 +103,6 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
 
         dart_type = sql_to_dart_type_mapping.get(col_type, "String")
 
-        # filter out columns that are not needed to be the dialog properties
-        # for i in dialog_property_column_excludes:
-        #     if i in snake_col_name:
-        #         continue
-        #     dialog_property_columns.append(
-        #         Column(
-        #             snake_name=snake_col_name,
-        #             camel_name=camel_col_name,
-        #             cap_camel_name=capitalized_camel_col_name,
-        #             sql_type=col_type,
-        #             dart_type=dart_type,
-        #         )
-        #     )
         dialog_property_columns += filter_columns(
             snake_col_name,
             camel_col_name,
