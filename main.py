@@ -67,5 +67,5 @@ for file in os.listdir(sqls_directory):
             for statement in create_table_statements:
                 print(f"\n\n>> create table statement: \n\n{statement}")
                 sqlToModel(statement, models_directory)
-                sqlToProvider(statement, providers_directory)
+                sqlToProvider(statement, providers_directory, PROJECT_NAME)
                 sqlToView(statement, views_directory, PROJECT_NAME)

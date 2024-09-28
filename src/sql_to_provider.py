@@ -3,21 +3,21 @@ import re
 from src.utils import capitalize_camel_case, snake_to_camel
 
 
-def sqlToProvider(sql_statement:str, providers_directory:str):
+def sqlToProvider(sql_statement: str, providers_directory: str, project_name: str):
     # Extract table name using regex
-    table_name_match = re.search(r'create table (\w+)', sql_statement, re.IGNORECASE)
+    table_name_match = re.search(r"create table (\w+)", sql_statement, re.IGNORECASE)
     if not table_name_match:
         raise ValueError("Table name not found in SQL statement")
-    
+
     table_name = table_name_match.group(1)
     camel_case_table_name = snake_to_camel(table_name)
     capitalized_camel_case_table_name = capitalize_camel_case(camel_case_table_name)
-    
+
     # Dart provider template
     provider_template = f"""
 import 'dart:async';
 
-import 'package:investa/models/{table_name}_model.dart';
+import 'package:{project_name}/models/{table_name}_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -64,6 +64,6 @@ class {capitalized_camel_case_table_name} extends _${capitalized_camel_case_tabl
         os.remove(output_file)
         print(f"Deleted existing file: {output_file}")
 
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         f.write(provider_template.strip())
     print(f"Model written to {output_file}")

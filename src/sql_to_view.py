@@ -221,7 +221,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
                 onTap: () async {{
                     DateTime? pickedDate = await showDatePicker(
                     context: context,
-                    initialDate: DateTime.tryParse(initialTransactionDate ?? "") ??
+                    initialDate: DateTime.tryParse(initial{column.cap_camel_name} ?? "") ??
                         DateTime.now(),
                     firstDate: DateTime(1900),
                     lastDate: DateTime(2200),
@@ -233,7 +233,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
                 ),
                 """
             )
-        if column.sql_type == "bigint":
+        if column.sql_type == "bigint" and column.snake_name.endswith("_id"):
             text_form_field_lines.append(
                 f"""
                 {camel_col_name_without_id}sAsyncValue.when(
@@ -256,6 +256,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
                 ),
                 """
             )
+
         if column.sql_type == "text":
             text_form_field_lines.append(
                 f"""
@@ -277,7 +278,11 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
                 ),
                 """
             )
-        if column.sql_type == "real" or column.sql_type == "double":
+        if (
+            column.sql_type == "real"
+            or column.sql_type == "double"
+            or (column.sql_type == "bigint" and not column.snake_name.endswith("_id"))
+        ):
             text_form_field_lines.append(
                 f"""
                 TextFormField(
