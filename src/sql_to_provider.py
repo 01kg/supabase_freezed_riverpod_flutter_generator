@@ -13,11 +13,16 @@ def sqlToProvider(sql_statement: str, providers_directory: str, project_name: st
     camel_case_table_name = snake_to_camel(table_name)
     capitalized_camel_case_table_name = capitalize_camel_case(camel_case_table_name)
 
+    import_for_debug = "import 'package:flutter/widgets.dart';"
+    debug_print = f"debugPrint(\">> {table_name}_provider response[0]:\\n${{(response.isNotEmpty ? response[0] : 'empty')}}\\n\");"
+
     # Dart provider template
     provider_template = f"""
 import 'dart:async';
 
+{import_for_debug}
 import 'package:{project_name}/models/{table_name}_model.dart';
+import 'package:{project_name}/providers/{table_name}_provider_query.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -29,7 +34,8 @@ final supabase = Supabase.instance.client;
 class {capitalized_camel_case_table_name} extends _${capitalized_camel_case_table_name} {{
   @override
   Future<List<{capitalized_camel_case_table_name}Model>> build() async {{
-    final response = await supabase.from('{table_name}').select();
+    final response = await supabase.from('{table_name}').select({camel_case_table_name}Query);
+    {debug_print}
     return response.map({capitalized_camel_case_table_name}Model.fromJson).toList();
   }}
 

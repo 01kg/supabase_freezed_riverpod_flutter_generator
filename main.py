@@ -1,12 +1,15 @@
 import os
 import re
 import argparse
+from typing import List
 
+from src.sql_to_provider_query import sqlToProviderQuery
+from src.classes import Column
 from src.sql_to_view import sqlToView
 from src.sql_to_model import sqlToModel
 from src.sql_to_provider import sqlToProvider
 
-from src.utils import extract_last_folder_name
+from src.utils import extract_last_folder_name, parse_table_columns
 
 
 parser = argparse.ArgumentParser(description="Process the FLUTTER_PROJECT_ROOT_PATH.")
@@ -17,6 +20,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 FLUTTER_PROJECT_ROOT_PATH = args.FLUTTER_PROJECT_ROOT_PATH
+
 
 if not os.path.exists(FLUTTER_PROJECT_ROOT_PATH):
     raise FileNotFoundError(f"Directory not found: {FLUTTER_PROJECT_ROOT_PATH}")
@@ -66,6 +70,9 @@ for file in os.listdir(sqls_directory):
             # Loop through and print each statement
             for statement in create_table_statements:
                 print(f"\n\n>> create table statement: \n\n{statement}")
-                sqlToModel(statement, models_directory)
+                table_columns: List[Column] = parse_table_columns(statement) or []
+
+                sqlToModel(statement, models_directory, PROJECT_NAME)
                 sqlToProvider(statement, providers_directory, PROJECT_NAME)
+                sqlToProviderQuery(table_columns, providers_directory)
                 sqlToView(statement, views_directory, PROJECT_NAME)
