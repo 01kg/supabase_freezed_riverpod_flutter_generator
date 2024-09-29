@@ -3,6 +3,10 @@
 Help you spin up a relational-database-driven flutter app, powered by Supabase,
 Freezed, Riverpod, in no time!
 
+## Download [a latest release of SFRF](https://github.com/01kg/supabase_freezed_riverpod_flutter_generator/releases/latest)
+
+Prepare for later use.
+
 ## Start from a skeleton app
 
 It is a good idea to start from a skeleton app that did heavy lifting for you.
