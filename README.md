@@ -9,7 +9,7 @@ Freezed, Riverpod, in no time! 🚀</h3>
 
 ## Download [a latest release of SFRF](https://github.com/01kg/supabase_freezed_riverpod_flutter_generator/releases/latest)
 
-Prepare for later use.
+Unzip, cd into it, for later use.
 
 ## Start from a skeleton app
 
