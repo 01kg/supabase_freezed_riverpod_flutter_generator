@@ -189,7 +189,29 @@ You can go to Database -> Schema Visualizer to check the tables' relationships.
 
 ## Step 4: Under SFRF's root directory, run `python main.py "THE/PATH/TO/FLUTTER/APP/ROOT/DIRECTORY"`
 
-## Step 5: Under Flutter app's root directory, run `dart run build_runner build`.
+Thus, all files are generated.
+
+## Step 5: Format all files
+
+The generated files might not match Dart's format standard, it is recommend to
+format them for better experience for later editing.
+
+Since by the time of writing, `dart format`
+[doesn't recurse through subdirectories](https://dart.dev/tools/dart-format#specify-one-path),
+and does not recognize common seen auto-generated files like '\*.g.dart' or
+'\*.freezed.dart', so it is necessary to write a command to do so.
+
+```powershell
+# Windows PowerShell
+Get-ChildItem -Recurse -Filter *.dart | Where-Object { $_.Name -notlike '*.g.dart' -and $_.Name -notlike '*.freezed.dart' } | ForEach-Object { dart format $_.FullName }
+```
+
+```sh
+Unix/Linux/macOS
+find . -name "*.dart" ! -name "*.g.dart" ! -name "*.freezed.dart" -exec flutter format {} \;
+```
+
+## Step 6: Under Flutter app's root directory, run `dart run build_runner build`.
 
 This command let Freezed and Riverpod to generate their own codes.
 
@@ -210,21 +232,7 @@ Delete these files?
 Unless you have deep concerns about this, or just select 1 to delete these old
 files.
 
-### A bug:
-
-Due to the table name is plural, `countries`, but as field name, is singular,
-`country_id`.
-
-While SFRF is creating the name of a provider file for table `countries`, would
-name it `countries_provider.dart`.
-
-But while creating the imports for `cities` view file, it uses the word
-`country` from `country_id`, the import becomes
-`import '...providers/countrys_provider.dart';`. VS Code would mark it as error.
-
-By now, you should change it manually.
-
-## Step 6: connect the generated views with Flutter app:
+## Step 7: connect the generated views with Flutter app:
 
 Add new views to `onGeneratedRoute` configuration:
 
@@ -303,21 +311,20 @@ Link views to Settings page:
 ...
 ```
 
-## Step 7: Modify as you wish
+## Step 8: Modify as you wish
 
 After SFRF did heavy lifting things, it your turn, modify as you like.
 
 At least there are 2 places for you to do something:
 
-1. The list view. Since SFRF can not predict what fields are available for displaying in ListTile, so it leave it to a default text:
-    
-    ![msedge_8oXSqBuMCV](https://github.com/user-attachments/assets/fbc118e8-8780-405d-abe1-28543100bd89)
+1. The list view. Since SFRF can not predict what fields are available for
+   displaying in ListTile, so it leave it to a default text:
 
+   ![msedge_8oXSqBuMCV](https://github.com/user-attachments/assets/fbc118e8-8780-405d-abe1-28543100bd89)
 
-1. The dropdown lists. Due to the same reason, you should modify them to display correct info:
-    
-    ![msedge_9Q5Rn3RrSE](https://github.com/user-attachments/assets/300be4fb-9535-4ed6-ba08-ec05c6ef2d78)
+1. The dropdown lists. Due to the same reason, you should modify them to display
+   correct info:
 
-
+   ![msedge_9Q5Rn3RrSE](https://github.com/user-attachments/assets/300be4fb-9535-4ed6-ba08-ec05c6ef2d78)
 
 # Thanks for reading!
