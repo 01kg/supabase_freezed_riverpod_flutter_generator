@@ -19,13 +19,13 @@ def sqlToProviderQuery(table_columns: List[Column], providers_folder: str):
         related_query_lines.append(
             f"{foreign_detail_column_name.snake}:{snake_foreign_key_name} ( * ){'' if idx == len(related_columns) - 1 else ','}"
         )
+    query_all_str = f"*{"," if related_query_lines else ''}"
     related_queries_str = "\n".join(related_query_lines)
 
     content = f"""
 const {camel_table_name}Query = '''
-*,
+{query_all_str}
 {related_queries_str}
-
 ''';
 """
 
