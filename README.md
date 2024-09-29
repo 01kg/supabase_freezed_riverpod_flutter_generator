@@ -199,27 +199,7 @@ You can go to Database -> Schema Visualizer to check the tables' relationships.
 
 Thus, all files are generated.
 
-## Step 5: Format all files
-
-The generated files might not match Dart's format standard, it is recommend to
-format them for better experience for later editing.
-
-Since by the time of writing, `dart format`
-[doesn't recurse through subdirectories](https://dart.dev/tools/dart-format#specify-one-path),
-and does not recognize common seen auto-generated files like '\*.g.dart' or
-'\*.freezed.dart', so it is necessary to write a command to do so.
-
-```powershell
-# Windows PowerShell
-Get-ChildItem -Recurse -Filter *.dart | Where-Object { $_.Name -notlike '*.g.dart' -and $_.Name -notlike '*.freezed.dart' } | ForEach-Object { dart format $_.FullName }
-```
-
-```sh
-Unix/Linux/macOS
-find . -name "*.dart" ! -name "*.g.dart" ! -name "*.freezed.dart" -exec flutter format {} \;
-```
-
-## Step 6: Under Flutter app's root directory, run `dart run build_runner build`.
+## Step 5: Under Flutter app's root directory, run `dart run build_runner build`.
 
 This command let Freezed and Riverpod to generate their own codes.
 
@@ -239,6 +219,26 @@ Delete these files?
 
 Unless you have deep concerns about this, or just select 1 to delete these old
 files.
+
+## Step 6: Format all files
+
+The generated files might not match Dart's format standard, it is recommend to
+format them for better experience for later editing.
+
+Since by the time of writing, `dart format`
+[doesn't recurse through subdirectories](https://dart.dev/tools/dart-format#specify-one-path),
+and does not recognize common seen auto-generated files like '\*.g.dart' or
+'\*.freezed.dart', so it is necessary to write a command to do so.
+
+```powershell
+# Windows PowerShell
+Get-ChildItem -Recurse -Filter *.dart | Where-Object { $_.Name -notlike '*.g.dart' -and $_.Name -notlike '*.freezed.dart' } | ForEach-Object { dart format $_.FullName }
+```
+
+```sh
+Unix/Linux/macOS
+find . -name "*.dart" ! -name "*.g.dart" ! -name "*.freezed.dart" -exec flutter format {} \;
+```
 
 ## Step 7: connect the generated views with Flutter app:
 

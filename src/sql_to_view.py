@@ -209,12 +209,13 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
     build_provider_columns = build_var_columns
     build_provider_lines = []
     for column in build_provider_columns:
-        snake_col_name_without_id = column.snake_name[:-3]
-        camel_col_name_without_id = snake_to_camel(snake_col_name_without_id)
+        snake_related_table_name = column.related_table_name
+        if snake_related_table_name:
+            camel_related_table_name = snake_to_camel(snake_related_table_name)
 
-        build_provider_lines.append(
-            f"final {column.related_table_name}AsyncValue = ref.watch({column.related_table_name}Provider);"
-        )
+            build_provider_lines.append(
+                f"final {camel_related_table_name}AsyncValue = ref.watch({camel_related_table_name}Provider);"
+            )
     build_providers_str = "\n".join(build_provider_lines)
 
     # construct import providers
@@ -233,7 +234,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
     for column in text_form_field_columns:
         if column.snake_name.endswith("_id"):
             snake_col_name_without_id = column.snake_name[:-3]
-            camel_col_name_without_id = snake_to_camel(snake_col_name_without_id)
+            camel_related_table_name = snake_to_camel(column.related_table_name)
 
         if column.sql_type == "date":
             text_form_field_lines.append(
@@ -260,7 +261,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
         if column.sql_type == "bigint" and column.snake_name.endswith("_id"):
             text_form_field_lines.append(
                 f"""
-                {column.related_table_name}AsyncValue.when(
+                {camel_related_table_name}AsyncValue.when(
                 loading: () => const CircularProgressIndicator(),
                 error: (err, stack) => Text('Error: $err'),
                 data: (items) => DropdownButtonFormField<int>(
