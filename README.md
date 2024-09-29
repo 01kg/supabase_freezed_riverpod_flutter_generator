@@ -1,7 +1,11 @@
-# supabase_freezed_riverpod_flutter_generator (SFRF)
-
-Help you spin up a relational-database-driven flutter app, powered by Supabase,
-Freezed, Riverpod, in no time!
+<div align="center">
+  <p align="center">
+    <h1>🎉</h1>
+    <h2>Supabase Freezed Riverpod Flutter Generator (SFRF)</h2>
+    <h3>Help you spin up a relational-database-driven flutter app, </br>powered by Supabase,
+Freezed, Riverpod, in no time! 🚀</h3>
+  </p>
+</div>
 
 ## Download [a latest release of SFRF](https://github.com/01kg/supabase_freezed_riverpod_flutter_generator/releases/latest)
 
