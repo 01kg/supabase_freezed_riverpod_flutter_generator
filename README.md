@@ -232,12 +232,12 @@ and does not recognize common seen auto-generated files like '\*.g.dart' or
 
 ```powershell
 # Windows PowerShell
-Get-ChildItem -Recurse -Filter *.dart | Where-Object { $_.Name -notlike '*.g.dart' -and $_.Name -notlike '*.freezed.dart' } | ForEach-Object { dart format $_.FullName }
+Get-ChildItem -Path .\lib -Recurse -Filter *.dart | Where-Object { $_.Name -notlike '*.g.dart' -and $_.Name -notlike '*.freezed.dart' } | ForEach-Object { dart format $_.FullName }
 ```
 
 ```sh
-Unix/Linux/macOS
-find . -name "*.dart" ! -name "*.g.dart" ! -name "*.freezed.dart" -exec flutter format {} \;
+# Unix/Linux/macOS
+find ./lib -name "*.dart" ! -name "*.g.dart" ! -name "*.freezed.dart" -exec flutter format {} \;
 ```
 
 ## Step 7: connect the generated views with Flutter app:
