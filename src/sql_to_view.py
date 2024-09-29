@@ -1,16 +1,26 @@
 import os
 import re
+from typing import List
 
 from src.utils import capitalize_camel_case, snake_to_camel, snake_to_title_case
 
 
 class Column:
-    def __init__(self, snake_name, camel_name, cap_camel_name, sql_type, dart_type):
+    def __init__(
+        self,
+        snake_name,
+        camel_name,
+        cap_camel_name,
+        sql_type,
+        dart_type,
+        related_table_name=None,
+    ):
         self.snake_name = snake_name
         self.camel_name = camel_name
         self.cap_camel_name = cap_camel_name
         self.sql_type = sql_type
         self.dart_type = dart_type
+        self.related_table_name = related_table_name
 
 
 def filter_columns(
@@ -21,6 +31,7 @@ def filter_columns(
     dart_type,
     include_patterns=None,
     exclude_patterns=None,
+    related_table_name=None,
 ):
     columns = []
 
@@ -45,6 +56,7 @@ def filter_columns(
                         cap_camel_name=capitalized_camel_col_name,
                         sql_type=col_type,
                         dart_type=dart_type,
+                        related_table_name=related_table_name,
                     )
                 )
     return columns
@@ -76,27 +88,35 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
 
     columns = match.group(2).split(",")
 
-    dialog_property_columns = []
+    dialog_property_columns: List[Column] = []
     dialog_property_column_includes = []
     dialog_property_column_excludes = [r"user_id"]
 
-    build_var_columns = []
+    build_var_columns: List[Column] = []
     build_var_column_includes = [r"_id"]
     build_var_column_excludes = [r"user_id"]
 
-    build_controller_columns = []
+    build_controller_columns: List[Column] = []
     build_controller_column_includes = []
     build_controller_column_excludes = [r"id"]
 
-    text_form_field_columns = []
+    text_form_field_columns: List[Column] = []
     text_form_field_column_includes = []
     text_form_field_column_excludes = [r"(?<!_)id", r"user_id"]
 
     for column in columns:
         column = column.strip()
-        snake_col_name, col_type = column.split()[:2]
+        column_parts = column.split()
+        snake_col_name, col_type = column_parts[:2]
         col_type = col_type.strip().lower()
         snake_col_name = snake_col_name.strip()
+
+        # find related table
+        # in column_parts, if there is 'references' then the column is a foreign key
+        # the element after 'references' is the related table name
+        related_table_name = None
+        if "references" in column_parts:
+            related_table_name = column_parts[column_parts.index("references") + 1]
 
         camel_col_name = snake_to_camel(snake_col_name)
         capitalized_camel_col_name = capitalize_camel_case(camel_col_name)
@@ -111,6 +131,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
             dart_type,
             dialog_property_column_includes,
             dialog_property_column_excludes,
+            related_table_name,
         )
 
         # filter out columns that are not needed to be the build vars
@@ -122,6 +143,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
             dart_type,
             build_var_column_includes,
             build_var_column_excludes,
+            related_table_name,
         )
 
         # filter out columns that are not needed to be the build controllers
@@ -133,6 +155,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
             dart_type,
             build_controller_column_includes,
             build_controller_column_excludes,
+            related_table_name,
         )
 
         # filter out columns that are not needed to be the text form fields
@@ -144,6 +167,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
             dart_type,
             text_form_field_column_includes,
             text_form_field_column_excludes,
+            related_table_name,
         )
 
     # construct dialog properties
@@ -189,7 +213,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
         camel_col_name_without_id = snake_to_camel(snake_col_name_withou_id)
 
         build_provider_lines.append(
-            f"final {camel_col_name_without_id}sAsyncValue = ref.watch({camel_col_name_without_id}sProvider);"
+            f"final {column.related_table_name}AsyncValue = ref.watch({column.related_table_name}Provider);"
         )
     build_providers_str = "\n".join(build_provider_lines)
 
@@ -200,7 +224,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
         snake_col_name_withou_id = column.snake_name[:-3]
 
         import_provider_lines.append(
-            f"import 'package:{project_name}/providers/{snake_col_name_withou_id}s_provider.dart';"
+            f"import 'package:{project_name}/providers/{column.related_table_name}_provider.dart';"
         )
     import_providers_str = "\n".join(import_provider_lines)
 
@@ -236,7 +260,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
         if column.sql_type == "bigint" and column.snake_name.endswith("_id"):
             text_form_field_lines.append(
                 f"""
-                {camel_col_name_without_id}sAsyncValue.when(
+                {column.related_table_name}AsyncValue.when(
                 loading: () => const CircularProgressIndicator(),
                 error: (err, stack) => Text('Error: $err'),
                 data: (items) => DropdownButtonFormField<int>(
