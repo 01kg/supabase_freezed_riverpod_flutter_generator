@@ -1,6 +1,8 @@
 import os
 import re
+from typing import List
 
+from src.conf import MODEL_HAS_DEFAULT_VALUE
 from src.utils import capitalize_camel_case, snake_to_camel
 
 
@@ -17,8 +19,8 @@ def sqlToModel(sql: str, models_directory: str, project_name: str):
     table_name = match.group(1)
     columns = match.group(2).split(",")
 
-    import_related_model_lines = []
-    dart_columns = []
+    import_related_model_lines:List[str] = []
+    dart_columns: List[str] = []
     for column in columns:
         column = column.strip()
         column_parts = column.split()
@@ -42,9 +44,24 @@ def sqlToModel(sql: str, models_directory: str, project_name: str):
         #     dart_type = 'DateTime'
         else:
             dart_type = "dynamic"
+        default_value_str:str = ""
+        question_mark = "?"
+        if col_name not in ["id"] and "references" not in column_parts:
+            if MODEL_HAS_DEFAULT_VALUE:
+                question_mark = ""
+            if (
+                col_type.startswith("varchar")
+                or col_type.startswith("uuid")
+                or col_type.startswith("text")
+                or col_type.startswith("date")
+            ):
+                default_value_str = f"@Default('No {col_type} provided')"
+            elif (col_type.startswith("bigint") or col_type.startswith("real") or col_type.startswith("double")):
+                default_value_str = "@Default(0)"
 
         json_key = f"@JsonKey(name: '{col_name}')" if "_" in col_name else ""
-        dart_columns.append(f"    {json_key} {dart_type}? {col_name_in_camel},")
+
+        dart_columns.append(f"   {default_value_str if MODEL_HAS_DEFAULT_VALUE else ""} {json_key} {dart_type}{question_mark} {col_name_in_camel},")
 
         # if there is 'references' then the column is a foreign key
         # the element after 'references' is the related table name

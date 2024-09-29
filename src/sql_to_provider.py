@@ -1,5 +1,6 @@
 import os
 import re
+from src.conf import DEBUG_PRINT_IN_PROVIDER
 from src.utils import capitalize_camel_case, snake_to_camel
 
 
@@ -13,8 +14,8 @@ def sqlToProvider(sql_statement: str, providers_directory: str, project_name: st
     camel_case_table_name = snake_to_camel(table_name)
     capitalized_camel_case_table_name = capitalize_camel_case(camel_case_table_name)
 
-    import_for_debug = "import 'package:flutter/widgets.dart';"
-    debug_print = f"debugPrint(\">> {table_name}_provider response[0]:\\n${{(response.isNotEmpty ? response[0] : 'empty')}}\\n\");"
+    import_for_debug = "import 'package:flutter/widgets.dart';" if DEBUG_PRINT_IN_PROVIDER else ""
+    debug_print = f"debugPrint(\">> {table_name}_provider response[0]:\\n${{(response.isNotEmpty ? response[0] : 'empty')}}\\n\");" if DEBUG_PRINT_IN_PROVIDER else ""
 
     # Dart provider template
     provider_template = f"""

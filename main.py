@@ -73,6 +73,6 @@ for file in os.listdir(sqls_directory):
                 table_columns: List[Column] = parse_table_columns(statement) or []
 
                 sqlToModel(statement, models_directory, PROJECT_NAME)
-                sqlToProvider(statement, providers_directory, PROJECT_NAME)
-                sqlToProviderQuery(table_columns, providers_directory)
-                sqlToView(statement, views_directory, PROJECT_NAME)
+                # sqlToProvider(statement, providers_directory, PROJECT_NAME)
+                # sqlToProviderQuery(table_columns, providers_directory)
+                # sqlToView(statement, views_directory, PROJECT_NAME)

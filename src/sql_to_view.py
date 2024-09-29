@@ -2,6 +2,7 @@ import os
 import re
 from typing import List
 
+from src.conf import MODEL_HAS_DEFAULT_VALUE
 from src.utils import capitalize_camel_case, snake_to_camel, snake_to_title_case
 
 
@@ -322,7 +323,8 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
 
     # construct dialog on save params
     dialog_on_save_controller_param_columns = text_form_field_columns
-    dialog_on_save_controller_param_lines = []
+    dialog_on_save_controller_param_lines:List[str] = []
+    try_parse_or_parse = "tryParse" if not MODEL_HAS_DEFAULT_VALUE else "parse"
     for column in dialog_on_save_controller_param_columns:
         if column.dart_type == "String":
             dialog_on_save_controller_param_lines.append(
@@ -330,11 +332,11 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
             )
         if column.dart_type == "int" and not column.snake_name.endswith("_id"):
             dialog_on_save_controller_param_lines.append(
-                f"{column.camel_name}: int.tryParse({column.camel_name}Controller.text),"
+                f"{column.camel_name}: int.{try_parse_or_parse}({column.camel_name}Controller.text),"
             )
         if column.dart_type == "double":
             dialog_on_save_controller_param_lines.append(
-                f"{column.camel_name}: double.tryParse({column.camel_name}Controller.text),"
+                f"{column.camel_name}: double.{try_parse_or_parse}({column.camel_name}Controller.text),"
             )
         if column.snake_name.endswith("_id"):
             dialog_on_save_controller_param_lines.append(
