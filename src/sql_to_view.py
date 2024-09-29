@@ -209,8 +209,8 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
     build_provider_columns = build_var_columns
     build_provider_lines = []
     for column in build_provider_columns:
-        snake_col_name_withou_id = column.snake_name[:-3]
-        camel_col_name_without_id = snake_to_camel(snake_col_name_withou_id)
+        snake_col_name_without_id = column.snake_name[:-3]
+        camel_col_name_without_id = snake_to_camel(snake_col_name_without_id)
 
         build_provider_lines.append(
             f"final {column.related_table_name}AsyncValue = ref.watch({column.related_table_name}Provider);"
@@ -221,7 +221,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
     import_provider_columns = build_var_columns
     import_provider_lines = []
     for column in import_provider_columns:
-        snake_col_name_withou_id = column.snake_name[:-3]
+        snake_col_name_without_id = column.snake_name[:-3]
 
         import_provider_lines.append(
             f"import 'package:{project_name}/providers/{column.related_table_name}_provider.dart';"
@@ -232,8 +232,8 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
     text_form_field_lines = []
     for column in text_form_field_columns:
         if column.snake_name.endswith("_id"):
-            snake_col_name_withou_id = column.snake_name[:-3]
-            camel_col_name_without_id = snake_to_camel(snake_col_name_withou_id)
+            snake_col_name_without_id = column.snake_name[:-3]
+            camel_col_name_without_id = snake_to_camel(snake_col_name_without_id)
 
         if column.sql_type == "date":
             text_form_field_lines.append(
@@ -264,7 +264,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
                 loading: () => const CircularProgressIndicator(),
                 error: (err, stack) => Text('Error: $err'),
                 data: (items) => DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(labelText: '{snake_to_title_case(snake_col_name_withou_id)}'),
+                    decoration: const InputDecoration(labelText: '{snake_to_title_case(snake_col_name_without_id)}'),
                     value: current{column.cap_camel_name},
                     onChanged: (int? newValue) {{
                     current{column.cap_camel_name} = newValue;
@@ -275,7 +275,7 @@ def sqlToView(sql: str, views_directory: str, project_name: str):
                         child: const Text('An item'),
                     );
                     }}).toList(),
-                    hint: const Text('Select {snake_to_title_case(snake_col_name_withou_id)}'),
+                    hint: const Text('Select {snake_to_title_case(snake_col_name_without_id)}'),
                 ),
                 ),
                 """
