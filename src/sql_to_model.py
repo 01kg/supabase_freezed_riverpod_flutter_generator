@@ -96,4 +96,4 @@ class {model_name} with _${model_name} {{
 
     with open(output_file, "w") as f:
         f.write(dart_model.strip())
-    print(f"Model written to {output_file}")
+    print(f">> Model written to {output_file}")

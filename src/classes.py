@@ -1,6 +1,9 @@
 
 
 
+from typing import List
+
+
 class NameVariant:
     def __init__(self, snake_name: str):
         self.snake: str = snake_name
@@ -30,6 +33,9 @@ class Column:
         dart_type: str,
         related_table_name: str = "",
         is_not_null: bool = False,
+        is_primary_key: bool = False,
+        is_foreign_key: bool = False,
+        is_enum: bool = False,
     ):
         self.table_name: NameVariant = NameVariant(table_name)
         self.column_name: NameVariant = NameVariant(column_name)
@@ -39,5 +45,14 @@ class Column:
             NameVariant(related_table_name)
         )
         self.is_not_null = is_not_null
+        self.is_primary_key = is_primary_key
+        self.is_foreign_key = is_foreign_key
+        self.is_enum = is_enum
 
 
+class SqlEnum:
+    def __init__(self, enum_name: str, enum_values: List[str]):
+        self.enum_name: NameVariant = NameVariant(enum_name)
+        self.enum_values: List[str] = enum_values
+
+    

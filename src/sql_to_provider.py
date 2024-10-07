@@ -73,4 +73,4 @@ class {capitalized_camel_case_table_name} extends _${capitalized_camel_case_tabl
 
     with open(output_file, "w") as f:
         f.write(provider_template.strip())
-    print(f"Model written to {output_file}")
+    print(f">> Provider written to {output_file}")

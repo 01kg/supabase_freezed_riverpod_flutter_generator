@@ -2,22 +2,92 @@ import os
 import re
 from typing import List
 
-from src.classes import Column, SqlEnum
 from src.conf import MODEL_HAS_DEFAULT_VALUE
 from src.utils import capitalize_camel_case, snake_to_camel, snake_to_title_case
 
 
+class Column:
+    def __init__(
+        self,
+        snake_name,
+        camel_name,
+        cap_camel_name,
+        sql_type,
+        dart_type,
+        related_table_name=None,
+    ):
+        self.snake_name = snake_name
+        self.camel_name = camel_name
+        self.cap_camel_name = cap_camel_name
+        self.sql_type = sql_type
+        self.dart_type = dart_type
+        self.related_table_name = related_table_name
 
 
-def sqlToView(table_columns: List[Column],  views_directory: str, project_name: str, enums: List[SqlEnum]=[]):
-    # if no column named id, return
-    if not any(column.column_name.snake == "id" for column in table_columns):
-        print("No id column found. Skipping view generation.")
-        return
+def filter_columns(
+    snake_col_name,
+    camel_col_name,
+    capitalized_camel_col_name,
+    col_type,
+    dart_type,
+    include_patterns=None,
+    exclude_patterns=None,
+    related_table_name=None,
+):
+    columns = []
 
-    snake_table_name = table_columns[0].table_name.snake
-    camel_table_name = table_columns[0].table_name.camel
-    capitalized_camel_table_name = table_columns[0].table_name.cap_camel
+    # Handle empty or null include list
+    if not include_patterns:
+        include_patterns = [r".*"]  # Match everything if include list is empty or null
+
+    # Handle empty or null exclude list
+    if not exclude_patterns:
+        exclude_patterns = []  # No exclusions if exclude list is empty or null
+
+    for include_pattern in include_patterns:
+        for exclude_pattern in exclude_patterns:
+            if re.search(exclude_pattern, snake_col_name):
+                break  # Skip this column if it matches any exclude pattern
+        else:
+            if re.search(include_pattern, snake_col_name):
+                columns.append(
+                    Column(
+                        snake_name=snake_col_name,
+                        camel_name=camel_col_name,
+                        cap_camel_name=capitalized_camel_col_name,
+                        sql_type=col_type,
+                        dart_type=dart_type,
+                        related_table_name=related_table_name,
+                    )
+                )
+    return columns
+
+
+def sqlToView(sql: str, views_directory: str, project_name: str):
+    # Regex pattern to match CREATE TABLE statements
+    create_table_pattern = re.compile(
+        r"create table (\w+) \(([\s\S]*?)\);", re.IGNORECASE
+    )
+
+    match = create_table_pattern.search(sql)
+    if not match:
+        return None
+
+    snake_table_name = match.group(1)
+    camel_table_name = snake_to_camel(snake_table_name)
+    capitalized_camel_table_name = capitalize_camel_case(camel_table_name)
+
+    # Map SQL types to Dart types
+    sql_to_dart_type_mapping = {
+        "bigint": "int",
+        "date": "String",
+        "real": "double",
+        "double": "double",
+        "text": "String",
+        "uuid": "String",
+    }
+
+    columns = match.group(2).split(",")
 
     dialog_property_columns: List[Column] = []
     dialog_property_column_includes = []
@@ -35,139 +105,171 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
     text_form_field_column_includes = []
     text_form_field_column_excludes = [r"(?<!_)id", r"user_id"]
 
-    # edit_button_param_columns: List[Column] = []
-    # edit_button_param_column_includes = []
-    # edit_button_param_column_excludes = [r"id"]
+    for column in columns:
+        column = column.strip()
+        column_parts = column.split()
+        snake_col_name, col_type = column_parts[:2]
+        col_type = col_type.strip().lower()
+        snake_col_name = snake_col_name.strip()
 
-    for column in table_columns:
-        snake_col_name = column.column_name.snake
-        camel_col_name = column.column_name.camel
-        capitalized_camel_col_name = column.column_name.cap_camel
-        related_table_name = column.related_table_name.snake
+        # find related table
+        # in column_parts, if there is 'references' then the column is a foreign key
+        # the element after 'references' is the related table name
+        related_table_name = None
+        if "references" in column_parts:
+            related_table_name = column_parts[column_parts.index("references") + 1]
 
-        col_type = column.sql_type
-        dart_type = column.dart_type
+        camel_col_name = snake_to_camel(snake_col_name)
+        capitalized_camel_col_name = capitalize_camel_case(camel_col_name)
 
-        if column.related_table_name.snake != "auth.users":
-            dialog_property_columns.append(column)
-        # dialog_property_columns.append(column if column.related_table_name.snake != "auth.users" else []) 
+        dart_type = sql_to_dart_type_mapping.get(col_type, "String")
+
+        dialog_property_columns += filter_columns(
+            snake_col_name,
+            camel_col_name,
+            capitalized_camel_col_name,
+            col_type,
+            dart_type,
+            dialog_property_column_includes,
+            dialog_property_column_excludes,
+            related_table_name,
+        )
 
         # filter out columns that are not needed to be the build vars
-        if (related_table_name and related_table_name != "auth.users") or column.is_enum:
-            build_var_columns.append(column)
+        build_var_columns += filter_columns(
+            snake_col_name,
+            camel_col_name,
+            capitalized_camel_col_name,
+            col_type,
+            dart_type,
+            build_var_column_includes,
+            build_var_column_excludes,
+            related_table_name,
+        )
 
         # filter out columns that are not needed to be the build controllers
-        if not column.is_primary_key and not column.is_foreign_key:
-            build_controller_columns.append(column)
+        build_controller_columns += filter_columns(
+            snake_col_name,
+            camel_col_name,
+            capitalized_camel_col_name,
+            col_type,
+            dart_type,
+            build_controller_column_includes,
+            build_controller_column_excludes,
+            related_table_name,
+        )
 
-        if column.column_name.snake != "id" and related_table_name != "auth.users":
-            text_form_field_columns.append(column)
-
+        # filter out columns that are not needed to be the text form fields
+        text_form_field_columns += filter_columns(
+            snake_col_name,
+            camel_col_name,
+            capitalized_camel_col_name,
+            col_type,
+            dart_type,
+            text_form_field_column_includes,
+            text_form_field_column_excludes,
+            related_table_name,
+        )
 
     # construct dialog properties
-    dialog_property_lines:List[str] = []
+    dialog_property_lines = []
     for column in dialog_property_columns:
         dialog_property_lines.append(
-            f"final {column.dart_type}? initial{column.column_name.cap_camel};"
+            f"final {column.dart_type}? initial{column.cap_camel_name};"
         )
     dialog_properties_str = "\n".join(dialog_property_lines)
 
     # construct constructor parameters
     constructor_param_columns = dialog_property_columns
-    constructor_param_lines:List[str] = []
+    constructor_param_lines = []
     for column in constructor_param_columns:
-        constructor_param_lines.append(f"this.initial{column.column_name.cap_camel},")
+        constructor_param_lines.append(f"this.initial{column.cap_camel_name},")
     constructor_params_str = "\n".join(constructor_param_lines)
 
     # construct build vars
-    build_var_lines:List[str] = []
+    build_var_lines = []
     for column in build_var_columns:
         build_var_lines.append(
-            f"{column.dart_type}? current{column.column_name.cap_camel} = initial{column.column_name.cap_camel};"
+            f"{column.dart_type}? current{column.cap_camel_name} = initial{column.cap_camel_name};"
         )
     build_vars_str = "\n".join(build_var_lines)
 
     # construct build controllers
-    build_controller_lines:List[str] = []
+    build_controller_lines = []
     for column in build_controller_columns:
         if column.dart_type == "String":
-            text = f"initial{column.column_name.cap_camel}"
+            text = f"initial{column.cap_camel_name}"
         else:
-            text = f"initial{column.column_name.cap_camel}?.toString()"
+            text = f"initial{column.cap_camel_name}?.toString()"
         build_controller_lines.append(
-            f"final TextEditingController {column.column_name.camel}Controller = TextEditingController(text: {text});"
+            f"final TextEditingController {column.camel_name}Controller = TextEditingController(text: {text});"
         )
     build_controller_str = "\n".join(build_controller_lines)
 
     # construct build providers
     build_provider_columns = build_var_columns
-    build_provider_lines:List[str] = []
+    build_provider_lines = []
     for column in build_provider_columns:
-        snake_related_table_name = column.related_table_name.snake
+        snake_related_table_name = column.related_table_name
         if snake_related_table_name:
-            camel_related_table_name = column.related_table_name.camel
+            camel_related_table_name = snake_to_camel(snake_related_table_name)
 
             build_provider_lines.append(
-                f"final {column.column_name.camel}AsyncValue = ref.watch({camel_related_table_name}Provider);"
+                f"final {camel_related_table_name}AsyncValue = ref.watch({camel_related_table_name}Provider);"
             )
     build_providers_str = "\n".join(build_provider_lines)
 
     # construct import providers
     import_provider_columns = build_var_columns
-    import_provider_lines:List[str] = []
+    import_provider_lines = []
     for column in import_provider_columns:
-        if column.is_enum:
-            continue
-        snake_col_name_without_id = column.column_name.snake[:-3]
+        snake_col_name_without_id = column.snake_name[:-3]
 
         import_provider_lines.append(
-            f"import 'package:{project_name}/providers/{column.related_table_name.snake}_provider.dart';"
+            f"import 'package:{project_name}/providers/{column.related_table_name}_provider.dart';"
         )
-    import_provider_lines = list(set(import_provider_lines))
     import_providers_str = "\n".join(import_provider_lines)
 
     # construct TextFormFields for each column
-    text_form_field_lines:List[str] = []
+    text_form_field_lines = []
     for column in text_form_field_columns:
-        snake_col_name_without_id = ""
-        camel_related_table_name = ""
-        if column.column_name.snake.endswith("_id"):
-            snake_col_name_without_id = column.column_name.snake[:-3]
-            camel_related_table_name = column.related_table_name.camel
+        if column.snake_name.endswith("_id"):
+            snake_col_name_without_id = column.snake_name[:-3]
+            camel_related_table_name = snake_to_camel(column.related_table_name)
 
         if column.sql_type == "date":
             text_form_field_lines.append(
                 f"""
                 TextFormField(
-                controller: {column.column_name.camel}Controller,
-                decoration: const InputDecoration(labelText: '{snake_to_title_case(column.column_name.snake)}'),
+                controller: {column.camel_name}Controller,
+                decoration: const InputDecoration(labelText: '{snake_to_title_case(column.snake_name)}'),
                 readOnly: true,
                 onTap: () async {{
                     DateTime? pickedDate = await showDatePicker(
                     context: context,
-                    initialDate: DateTime.tryParse(initial{column.column_name.cap_camel} ?? "") ??
+                    initialDate: DateTime.tryParse(initial{column.cap_camel_name} ?? "") ??
                         DateTime.now(),
                     firstDate: DateTime(1900),
                     lastDate: DateTime(2200),
                     );
                     if (pickedDate != null) {{
-                    {column.column_name.camel}Controller.text = pickedDate.toIso8601String();
+                    {column.camel_name}Controller.text = pickedDate.toIso8601String();
                     }}
                 }},
                 ),
                 """
             )
-        if column.sql_type == "bigint" and column.column_name.snake.endswith("_id"):
+        if column.sql_type == "bigint" and column.snake_name.endswith("_id"):
             text_form_field_lines.append(
                 f"""
-                {column.column_name.camel}AsyncValue.when(
+                {camel_related_table_name}AsyncValue.when(
                 loading: () => const CircularProgressIndicator(),
                 error: (err, stack) => Text('Error: $err'),
                 data: (items) => DropdownButtonFormField<int>(
                     decoration: const InputDecoration(labelText: '{snake_to_title_case(snake_col_name_without_id)}'),
-                    value: current{column.column_name.cap_camel},
+                    value: current{column.cap_camel_name},
                     onChanged: (int? newValue) {{
-                    current{column.column_name.cap_camel} = newValue;
+                    current{column.cap_camel_name} = newValue;
                     }},
                     items: items.map<DropdownMenuItem<int>>((item) {{
                     return DropdownMenuItem<int>(
@@ -181,34 +283,12 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
                 """
             )
 
-        if column.is_enum:
-            enum_values:List[str] = []
-            for enum in enums:
-                if column.sql_type == enum.enum_name.snake:
-                    enum_values = enum.enum_values
-
-            dropdown_items_str = ",\n".join([f"DropdownMenuItem(value: '{enum_value}', child: Text('{enum_value}'))" for enum_value in enum_values])
-            text_form_field_lines.append(
-                f"""
-                DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: '{snake_to_title_case(column.column_name.snake)}'),
-                value: current{column.column_name.cap_camel},
-                onChanged: (String? newValue) {{
-                    current{column.column_name.cap_camel} = newValue;
-                }},
-                items: const [{dropdown_items_str}],
-                hint: const Text('Select {snake_to_title_case(column.column_name.snake)}'),
-                ),
-                """
-            )
-
-
         if column.sql_type == "text":
             text_form_field_lines.append(
                 f"""
                 TextFormField(
-                controller: {column.column_name.camel}Controller,
-                decoration: const InputDecoration(labelText: '{snake_to_title_case(column.column_name.snake)}'),
+                controller: {column.camel_name}Controller,
+                decoration: const InputDecoration(labelText: '{snake_to_title_case(column.snake_name)}'),
                 keyboardType: TextInputType.multiline,
                 minLines: 2,
                 maxLines: 8,
@@ -219,21 +299,21 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
             text_form_field_lines.append(
                 f"""
                 TextFormField(
-                controller: {column.column_name.camel}Controller,
-                decoration: const InputDecoration(labelText: '{snake_to_title_case(column.column_name.snake)}'),
+                controller: {column.camel_name}Controller,
+                decoration: const InputDecoration(labelText: '{snake_to_title_case(column.snake_name)}'),
                 ),
                 """
             )
         if (
             column.sql_type == "real"
             or column.sql_type == "double"
-            or (column.sql_type == "bigint" and not column.column_name.snake.endswith("_id"))
+            or (column.sql_type == "bigint" and not column.snake_name.endswith("_id"))
         ):
             text_form_field_lines.append(
                 f"""
                 TextFormField(
-                controller: {column.column_name.camel}Controller,
-                decoration: const InputDecoration(labelText: '{snake_to_title_case(column.column_name.snake)}'),
+                controller: {column.camel_name}Controller,
+                decoration: const InputDecoration(labelText: '{snake_to_title_case(column.snake_name)}'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
                 """
@@ -242,45 +322,34 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
     text_form_fields_str = "\n".join(text_form_field_lines)
 
     # construct dialog on save params
-    dialog_on_save_controller_param_columns = table_columns
+    dialog_on_save_controller_param_columns = text_form_field_columns
     dialog_on_save_controller_param_lines:List[str] = []
+    try_parse_or_parse = "tryParse" if not MODEL_HAS_DEFAULT_VALUE else "parse"
     for column in dialog_on_save_controller_param_columns:
-        try_parse_or_parse = "tryParse" if not column.is_not_null else "parse"
-
-        if column.column_name.snake == "id":
+        if column.dart_type == "String":
             dialog_on_save_controller_param_lines.append(
-                f"{column.column_name.camel}: initial{column.column_name.cap_camel},"
+                f"{column.camel_name}: {column.camel_name}Controller.text,"
             )
-        elif column.related_table_name.snake == "auth.users":
+        if column.dart_type == "int" and not column.snake_name.endswith("_id"):
             dialog_on_save_controller_param_lines.append(
-                f"{column.column_name.camel}: ref.read({camel_table_name}Provider.notifier).getUserId()!,"
+                f"{column.camel_name}: int.{try_parse_or_parse}({column.camel_name}Controller.text),"
             )
-        elif column.dart_type == "String":
+        if column.dart_type == "double":
             dialog_on_save_controller_param_lines.append(
-                f"{column.column_name.camel}: {column.column_name.camel}Controller.text,"
+                f"{column.camel_name}: double.{try_parse_or_parse}({column.camel_name}Controller.text),"
             )
-        elif column.dart_type == "int" and not column.column_name.snake.endswith("_id"):
+        if column.snake_name.endswith("_id"):
             dialog_on_save_controller_param_lines.append(
-                f"{column.column_name.camel}: int.{try_parse_or_parse}({column.column_name.camel}Controller.text),"
+                f"{column.camel_name}: current{column.cap_camel_name},"
             )
-        elif column.dart_type == "double":
-            dialog_on_save_controller_param_lines.append(
-                f"{column.column_name.camel}: double.{try_parse_or_parse}({column.column_name.camel}Controller.text),"
-            )
-        elif column.column_name.snake.endswith("_id"):
-            esclam = "!" if column.is_not_null else ""
-            dialog_on_save_controller_param_lines.append(
-                f"{column.column_name.camel}: current{column.column_name.cap_camel}{esclam},"
-            )
-
     dialog_on_save_params_str = "\n".join(dialog_on_save_controller_param_lines)
 
     # construct the edit button params
-    edit_button_param_columns = dialog_property_columns
-    edit_button_param_lines:List[str]= []
+    edit_button_param_columns = text_form_field_columns
+    edit_button_param_lines = []
     for column in edit_button_param_columns:
         edit_button_param_lines.append(
-            f"initial{column.column_name.cap_camel}: value.{column.column_name.camel},"
+            f"initial{column.cap_camel_name}: value.{column.camel_name},"
         )
     edit_button_params_str = "\n".join(edit_button_param_lines)
 
@@ -341,6 +410,7 @@ class {capitalized_camel_table_name}View extends ConsumerWidget {{
                           builder: (BuildContext context) {{
                             return _{capitalized_camel_table_name}Dialog(
                               context: context,
+                              initialId: value.id,
                               {edit_button_params_str}
                             );
                           }},
@@ -445,7 +515,10 @@ class _{capitalized_camel_table_name}Dialog extends ConsumerWidget {{
             await ref
                 .read({camel_table_name}Provider.notifier)
                 .upsert({capitalized_camel_table_name}Model(
+                  id: initialId,
                   {dialog_on_save_params_str}
+                  userId:
+                      ref.read({camel_table_name}Provider.notifier).getUserId(),
                 ));
             Navigator.of(context).pop(true);
           }},
@@ -465,4 +538,4 @@ class _{capitalized_camel_table_name}Dialog extends ConsumerWidget {{
 
     with open(output_file, "w") as f:
         f.write(dart_class.strip())
-    print(f">> View written to {output_file}")
+    print(f"Model written to {output_file}")

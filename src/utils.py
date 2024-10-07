@@ -2,7 +2,7 @@ import os
 import re
 from typing import Any, List
 
-from src.classes import Column, NameVariant
+from src.classes import Column, NameVariant, SqlEnum
 
 
 def snake_to_camel(snake_str: str) -> str:
@@ -42,7 +42,7 @@ def write_to_file(file_path: str, content: str):
 
     with open(file_path, "w") as f:
         f.write(content.strip())
-    print(f">> Model written to {file_path}")
+    print(f">> Written to {file_path}")
 
 
 def get_foreign_detail_column_name(snake_column_name: str) -> NameVariant:
@@ -54,7 +54,7 @@ def get_foreign_detail_column_name(snake_column_name: str) -> NameVariant:
     )
 
 
-def parse_table_columns(sql_create_table_statement: str, whole_sql_content: str="") -> List[Column] | None:
+def parse_table_columns(sql_create_table_statement: str, whole_sql_content: str="", enums: List[SqlEnum]=[]) -> List[Column] | None:
     return_list: List[Column] | None = []
     # Regex pattern to match CREATE TABLE statements
     create_table_pattern = re.compile(
@@ -88,6 +88,7 @@ def parse_table_columns(sql_create_table_statement: str, whole_sql_content: str=
         "uuid": "String",
     }
 
+    
     for column in columns:
         column = column.strip()
         column_parts = column.split()
@@ -96,17 +97,29 @@ def parse_table_columns(sql_create_table_statement: str, whole_sql_content: str=
         snake_col_name = snake_col_name.strip()
 
         snake_related_table_name = ""
+        is_foreign_key = False
         if "references" in column_parts:
             snake_related_table_name = column_parts[
                 column_parts.index("references") + 1
             ]
+            is_foreign_key = True
 
         is_not_null = "not" in column_parts and "null" in column_parts
+
+        is_primary_key = "primary" in column_parts and "key" in column_parts
 
         if alter_table_add_foreign_key_matches:
             for alter_table_add_foreign_key_match in alter_table_add_foreign_key_matches:
                 if snake_col_name == alter_table_add_foreign_key_match[1] and snake_table_name == alter_table_add_foreign_key_match[0]:
                     snake_related_table_name = alter_table_add_foreign_key_match[2]
+                    is_foreign_key = True
+                    break
+
+        is_enum = False
+        if enums:
+            for enum in enums:
+                if col_type == enum.enum_name.snake:
+                    is_enum = True
                     break
 
         dart_type = sql_to_dart_type_mapping.get(col_type, "String")
@@ -117,13 +130,40 @@ def parse_table_columns(sql_create_table_statement: str, whole_sql_content: str=
             dart_type=dart_type,
             sql_type=col_type,
             related_table_name=snake_related_table_name,
-            is_not_null=is_not_null
+            is_not_null=is_not_null,
+            is_primary_key=is_primary_key,
+            is_foreign_key=is_foreign_key,
+            is_enum=is_enum,
         )
 
         return_list.append(column_obj)
 
     return return_list
 
+def parse_sql_enums(sql_create_enum_statement: str) -> List[SqlEnum]:
+    return_list: List[SqlEnum] = []
+    # Regex pattern to match CREATE ENUM statements
+    create_enum_pattern = re.compile(
+        r'CREATE\s+TYPE\s+"?(\w+)"?\s+AS\s+ENUM\s*\(\s*([\s\S]*?)\s*\);', re.IGNORECASE
+    )
+    matches = create_enum_pattern.findall(sql_create_enum_statement)
+    if not matches:
+        return []
+
+    for match in matches:
+        snake_enum_name = match[0]
+        enum_values = match[1].split(",")
+
+        enum_values = [value.strip().replace("'", "") for value in enum_values]
+
+        enum_obj = SqlEnum(
+            enum_name=snake_enum_name,
+            enum_values=enum_values,
+        )
+
+        return_list.append(enum_obj)
+
+    return return_list
 
 
 def lowercase_sql_keywords(sql_statement: str)->str:
