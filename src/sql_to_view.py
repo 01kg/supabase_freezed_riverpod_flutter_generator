@@ -1,10 +1,8 @@
 import os
-import re
 from typing import List
 
 from src.classes import Column, SqlEnum
-from src.conf import MODEL_HAS_DEFAULT_VALUE
-from src.utils import capitalize_camel_case, snake_to_camel, snake_to_title_case
+from src.utils import snake_to_title_case
 
 
 
@@ -19,42 +17,34 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
     camel_table_name = table_columns[0].table_name.camel
     capitalized_camel_table_name = table_columns[0].table_name.cap_camel
 
-    dialog_property_columns: List[Column] = []
-    dialog_property_column_includes = []
-    dialog_property_column_excludes = [r"user_id"]
+    dialog_property_columns: List[Column] = [] # exclude user_id
 
-    build_var_columns: List[Column] = []
-    build_var_column_includes = [r"_id"]
-    build_var_column_excludes = [r"user_id"]
+    build_var_columns: List[Column] = [] # include related tables and enums, exept user_id
 
-    build_controller_columns: List[Column] = []
-    build_controller_column_includes = []
-    build_controller_column_excludes = [r"id"]
+    build_controller_columns: List[Column] = [] # exclude id
 
-    text_form_field_columns: List[Column] = []
-    text_form_field_column_includes = []
-    text_form_field_column_excludes = [r"(?<!_)id", r"user_id"]
+    text_form_field_columns: List[Column] = [] # exclude id and user_id
 
+    import_provider_columns: List[Column] = [] # include related tables, exclude user_id
     # edit_button_param_columns: List[Column] = []
     # edit_button_param_column_includes = []
     # edit_button_param_column_excludes = [r"id"]
 
     for column in table_columns:
-        snake_col_name = column.column_name.snake
-        camel_col_name = column.column_name.camel
-        capitalized_camel_col_name = column.column_name.cap_camel
-        related_table_name = column.related_table_name.snake
 
-        col_type = column.sql_type
-        dart_type = column.dart_type
+        related_table_name = column.related_table_name.snake
 
         if column.related_table_name.snake != "auth.users":
             dialog_property_columns.append(column)
         # dialog_property_columns.append(column if column.related_table_name.snake != "auth.users" else []) 
 
-        # filter out columns that are not needed to be the build vars
-        if (related_table_name and related_table_name != "auth.users") or column.is_enum:
+        if column.is_enum:
             build_var_columns.append(column)
+
+        # filter out columns that are not needed to be the build vars
+        if related_table_name and related_table_name != "auth.users":
+            build_var_columns.append(column)
+            import_provider_columns.append(column)
 
         # filter out columns that are not needed to be the build controllers
         if not column.is_primary_key and not column.is_foreign_key:
@@ -113,7 +103,6 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
     build_providers_str = "\n".join(build_provider_lines)
 
     # construct import providers
-    import_provider_columns = build_var_columns
     import_provider_lines:List[str] = []
     for column in import_provider_columns:
         if column.is_enum:
