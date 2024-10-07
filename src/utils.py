@@ -1,6 +1,6 @@
 import os
 import re
-from typing import List
+from typing import Any, List
 
 from src.classes import Column, NameVariant
 
@@ -54,7 +54,7 @@ def get_foreign_detail_column_name(snake_column_name: str) -> NameVariant:
     )
 
 
-def parse_table_columns(sql_create_table_statement: str) -> List[Column] | None:
+def parse_table_columns(sql_create_table_statement: str, whole_sql_content: str="") -> List[Column] | None:
     return_list: List[Column] | None = []
     # Regex pattern to match CREATE TABLE statements
     create_table_pattern = re.compile(
@@ -66,6 +66,17 @@ def parse_table_columns(sql_create_table_statement: str) -> List[Column] | None:
 
     snake_table_name = match.group(1)
     columns = match.group(2).split(",")
+
+    # dbdiagram.io exported postgres SQL file uses an "ALTER TABLE" statement to add foreign keys
+    # ALTER TABLE "entries" ADD FOREIGN KEY ("item_id") REFERENCES "items" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    alter_table_add_foreign_key_pattern = re.compile(
+        r'ALTER\s+TABLE\s+\"?(\w+)\"?\s+ADD\s+FOREIGN\s+KEY\s+\(\"?(\w+)\"?\)\s+REFERENCES\s+\"?(\w+\"?\.?\"?\w+)\"?\s+\(\"?(\w+)\"?\)\s?(ON\s+DELETE\s+\w+\s?)?(ON\s+UPDATE\s+\w+\s?)?;', 
+        re.IGNORECASE
+    )
+    alter_table_add_foreign_key_matches:List[Any] = []
+    if whole_sql_content:
+        whole_sql_content = whole_sql_content.replace('"', "")
+        alter_table_add_foreign_key_matches = alter_table_add_foreign_key_pattern.findall(whole_sql_content)
 
     # Map SQL types to Dart types
     sql_to_dart_type_mapping = {
@@ -90,6 +101,14 @@ def parse_table_columns(sql_create_table_statement: str) -> List[Column] | None:
                 column_parts.index("references") + 1
             ]
 
+        is_not_null = "not" in column_parts and "null" in column_parts
+
+        if alter_table_add_foreign_key_matches:
+            for alter_table_add_foreign_key_match in alter_table_add_foreign_key_matches:
+                if snake_col_name == alter_table_add_foreign_key_match[1] and snake_table_name == alter_table_add_foreign_key_match[0]:
+                    snake_related_table_name = alter_table_add_foreign_key_match[2]
+                    break
+
         dart_type = sql_to_dart_type_mapping.get(col_type, "String")
 
         column_obj = Column(
@@ -98,8 +117,22 @@ def parse_table_columns(sql_create_table_statement: str) -> List[Column] | None:
             dart_type=dart_type,
             sql_type=col_type,
             related_table_name=snake_related_table_name,
+            is_not_null=is_not_null
         )
 
         return_list.append(column_obj)
 
     return return_list
+
+
+
+def lowercase_sql_keywords(sql_statement: str)->str:
+    sql_keywords = [
+        "SELECT", "FROM", "WHERE", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE", "TABLE", "ALTER", "ADD", "DROP", "COLUMN", "CONSTRAINT", "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "ON", "GROUP", "BY", "ORDER", "HAVING", "DISTINCT", "UNION", "ALL", "AND", "OR", "NOT", "NULL", "IS", "IN", "EXISTS", "BETWEEN", "LIKE", "LIMIT", "OFFSET"
+    ]
+
+    for keyword in sql_keywords:
+        sql_statement = sql_statement.replace(keyword, keyword.lower())
+    
+
+    return sql_statement

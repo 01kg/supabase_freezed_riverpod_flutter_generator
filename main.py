@@ -9,7 +9,7 @@ from src.sql_to_view import sqlToView
 from src.sql_to_model import sqlToModel
 from src.sql_to_provider import sqlToProvider
 
-from src.utils import extract_last_folder_name, parse_table_columns
+from src.utils import extract_last_folder_name, lowercase_sql_keywords, parse_table_columns
 
 
 parser = argparse.ArgumentParser(description="Process the FLUTTER_PROJECT_ROOT_PATH.")
@@ -65,14 +65,17 @@ for file in os.listdir(sqls_directory):
     if os.path.isfile(file_path):
         with open(file_path, "r") as f:
             content = f.read()
+            # Find and delete all double quotes in content
+            content = content.replace('"', "")
             # Find all CREATE TABLE statements
-            create_table_statements = create_table_pattern.findall(content)
+            create_table_statements:List[str] = create_table_pattern.findall(content)
             # Loop through and print each statement
             for statement in create_table_statements:
+                statement = lowercase_sql_keywords(statement)
                 print(f"\n\n>> create table statement: \n\n{statement}")
-                table_columns: List[Column] = parse_table_columns(statement) or []
+                table_columns: List[Column] = parse_table_columns(statement, content) or []
 
-                sqlToModel(statement, models_directory, PROJECT_NAME)
-                # sqlToProvider(statement, providers_directory, PROJECT_NAME)
-                # sqlToProviderQuery(table_columns, providers_directory)
-                # sqlToView(statement, views_directory, PROJECT_NAME)
+                sqlToModel(table_columns, models_directory, PROJECT_NAME)
+                sqlToProvider(statement, providers_directory, PROJECT_NAME)
+                sqlToProviderQuery(table_columns, providers_directory)
+                sqlToView(statement, views_directory, PROJECT_NAME)

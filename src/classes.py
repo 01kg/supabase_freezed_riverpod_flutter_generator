@@ -1,4 +1,6 @@
 
+
+
 class NameVariant:
     def __init__(self, snake_name: str):
         self.snake: str = snake_name
@@ -27,6 +29,7 @@ class Column:
         sql_type: str,
         dart_type: str,
         related_table_name: str = "",
+        is_not_null: bool = False,
     ):
         self.table_name: NameVariant = NameVariant(table_name)
         self.column_name: NameVariant = NameVariant(column_name)
@@ -35,5 +38,6 @@ class Column:
         self.related_table_name: NameVariant = (
             NameVariant(related_table_name)
         )
+        self.is_not_null = is_not_null
 
 
