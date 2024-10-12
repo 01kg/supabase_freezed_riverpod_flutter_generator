@@ -278,6 +278,8 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
 
     dart_class = f"""
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:{project_name}/models/{snake_table_name}_model.dart';
 import 'package:{project_name}/providers/{snake_table_name}_provider.dart';
@@ -295,6 +297,16 @@ class {capitalized_camel_table_name}View extends ConsumerWidget {{
   @override
   Widget build(BuildContext context, WidgetRef ref) {{
     final {camel_table_name}AsyncValue = ref.watch({camel_table_name}Provider);
+    final {camel_table_name} = useState<List<{capitalized_camel_table_name}Model>>([]);
+
+    useEffect(() {{
+      {camel_table_name}.value = {camel_table_name}AsyncValue.maybeWhen(
+        data: (values) => values,
+        orElse: () => [],
+      );
+      return null;
+    }}, [{camel_table_name}AsyncValue]);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('{snake_to_title_case(snake_table_name)}'),
@@ -312,65 +324,67 @@ class {capitalized_camel_table_name}View extends ConsumerWidget {{
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Error: $error')),
         data: (values) {{
-          return ListView.builder(
-            itemCount: values.length,
+          return ListView.separated(
+            separatorBuilder: (context, index) => const Divider(),
+            itemCount: {camel_table_name}values.length,
             itemBuilder: (context, index) {{
-              final value = values[index];
-              return ListTile(
-                title: const Text("{snake_table_name}"),
-                subtitle: const Text("subtitle"),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () async {{
-                        await showDialog<bool>(
+              final value = {camel_table_name}.values[index];
+              return Dismissible(
+                key: Key(value.id.toString()),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  color: Colors.red,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                confirmDismiss: (direction) async {{
+                
+                  bool? confirmDelete = await showDialog<bool>(
+                    context: context,
+                    builder: (BuildContext context) {{
+                      return AlertDialog(
+                        title: const Text('Confirm Deletion'),
+                        content:
+                            const Text('Are you sure you want to delete this?'),
+                        actions: <Widget>[
+                          TextButton(
+                            child: const Text('Cancel'),
+                            onPressed: () {{
+                              Navigator.of(context).pop(false);
+                            }},
+                          ),
+                          TextButton(
+                            child: const Text('Delete'),
+                            onPressed: () {{
+                              Navigator.of(context).pop(true);
+                            }},
+                          ),
+                        ],
+                      );
+                    }},
+                  );
+                  return confirmDelete;
+                }}
+
+                onDismissed: (direction) async {{
+                  {camel_table_name}.value = List.from({camel_table_name}.value)..removeAt(index);
+                  await ref.read({camel_table_name}Provider.notifier).delete(value.id);
+                }},
+                child: ListTile(
+                  title: const Text("{snake_table_name}"),
+                  subtitle: const Text("subtitle"),
+                  onTap: () async {{
+                    await showDialog<bool>(
+                      context: context,
+                      builder: (BuildContext context) {{
+                        return _{capitalized_camel_table_name}Dialog(
                           context: context,
-                          builder: (BuildContext context) {{
-                            return _{capitalized_camel_table_name}Dialog(
-                              context: context,
-                              {edit_button_params_str}
-                            );
-                          }},
+                          {edit_button_params_str}
                         );
                       }},
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () async {{
-                        bool? confirmDelete = await showDialog<bool>(
-                          context: context,
-                          builder: (BuildContext context) {{
-                            return AlertDialog(
-                              title: const Text('Confirm Deletion'),
-                              content: const Text(
-                                  'Are you sure you want to delete this?'),
-                              actions: <Widget>[
-                                TextButton(
-                                  child: const Text('Cancel'),
-                                  onPressed: () {{
-                                    Navigator.of(context).pop(false);
-                                  }},
-                                ),
-                                TextButton(
-                                  child: const Text('Delete'),
-                                  onPressed: () {{
-                                    Navigator.of(context).pop(true);
-                                  }},
-                                ),
-                              ],
-                            );
-                          }},
-                        );
-                        if (confirmDelete == true) {{
-                          await ref
-                              .read({camel_table_name}Provider.notifier)
-                              .delete(value.id);
-                        }}
-                      }},
-                    ),
-                  ],
+                    );
+                  }},
                 ),
               );
             }},
