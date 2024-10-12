@@ -3,6 +3,7 @@ import re
 import argparse
 from typing import List
 
+from src.sql_to_enum import sqlEnumsToDartClasses
 from src.sql_to_provider_query import sqlToProviderQuery
 from src.classes import Column
 from src.sql_to_view import sqlToView
@@ -44,8 +45,9 @@ if not os.path.exists(sqls_directory):
 models_directory = os.path.join(FLUTTER_PROJECT_ROOT_PATH, "lib", "models")
 providers_directory = os.path.join(FLUTTER_PROJECT_ROOT_PATH, "lib", "providers")
 views_directory = os.path.join(FLUTTER_PROJECT_ROOT_PATH, "lib", "views")
+enums_directory = os.path.join(FLUTTER_PROJECT_ROOT_PATH, "lib", "sql_enums_dart_classes")
 
-directories = [models_directory, providers_directory, views_directory]
+directories = [models_directory, providers_directory, views_directory, enums_directory]
 
 for directory in directories:
     if not os.path.exists(directory):
@@ -76,7 +78,8 @@ for file in os.listdir(sqls_directory):
                 print(f"\n\n>> create table statement: \n\n{statement}")
                 table_columns: List[Column] = parse_table_columns(statement, content, enums) or []
 
-                sqlToModel(table_columns, models_directory, PROJECT_NAME)
-                sqlToProvider(statement, providers_directory, PROJECT_NAME)
-                sqlToProviderQuery(table_columns, providers_directory)
+                # sqlToModel(table_columns, models_directory, PROJECT_NAME)
+                # sqlToProvider(statement, providers_directory, PROJECT_NAME)
+                # sqlToProviderQuery(table_columns, providers_directory)
                 sqlToView(table_columns, views_directory, PROJECT_NAME, enums)
+                # sqlEnumsToDartClasses(enums, enums_directory)

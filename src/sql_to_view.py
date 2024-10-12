@@ -280,7 +280,6 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:{project_name}/models/{snake_table_name}_model.dart';
 import 'package:{project_name}/providers/{snake_table_name}_provider.dart';
 
@@ -289,7 +288,7 @@ import 'package:{project_name}/providers/{snake_table_name}_provider.dart';
 
 
 
-class {capitalized_camel_table_name}View extends ConsumerWidget {{
+class {capitalized_camel_table_name}View extends HookConsumerWidget {{
   static const routeName = '/{snake_table_name}';
 
   const {capitalized_camel_table_name}View({{super.key}});
@@ -326,9 +325,9 @@ class {capitalized_camel_table_name}View extends ConsumerWidget {{
         data: (values) {{
           return ListView.separated(
             separatorBuilder: (context, index) => const Divider(),
-            itemCount: {camel_table_name}values.length,
+            itemCount: {camel_table_name}.value.length,
             itemBuilder: (context, index) {{
-              final value = {camel_table_name}.values[index];
+              final value = {camel_table_name}.value[index];
               return Dismissible(
                 key: Key(value.id.toString()),
                 direction: DismissDirection.endToStart,
@@ -365,7 +364,7 @@ class {capitalized_camel_table_name}View extends ConsumerWidget {{
                     }},
                   );
                   return confirmDelete;
-                }}
+                }},
 
                 onDismissed: (direction) async {{
                   {camel_table_name}.value = List.from({camel_table_name}.value)..removeAt(index);
