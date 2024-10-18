@@ -171,25 +171,33 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
             )
 
         if column.is_enum:
-            enum_values:List[str] = []
-            for enum in enums:
-                if column.sql_type == enum.enum_name.snake:
-                    enum_values = enum.enum_values
+            matching_enum = next((enum for enum in enums if column.sql_type == enum.enum_name.snake), None)
 
-            dropdown_items_str = ",\n".join([f"DropdownMenuItem(value: '{enum_value}', child: Text('{enum_value}'))" for enum_value in enum_values])
-            text_form_field_lines.append(
-                f"""
-                DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: '{snake_to_title_case(column.column_name.snake)}'),
-                value: current{column.column_name.cap_camel},
-                onChanged: (String? newValue) {{
-                    current{column.column_name.cap_camel} = newValue;
-                }},
-                items: const [{dropdown_items_str}],
-                hint: const Text('Select {snake_to_title_case(column.column_name.snake)}'),
-                ),
-                """
-            )
+            # enum_values:List[str] = []
+            # for enum in enums:
+            #     if column.sql_type == enum.enum_name.snake:
+            #         enum_values = enum.enum_values
+
+            # dropdown_items_str = ",\n".join([f"DropdownMenuItem(value: '{enum_value}', child: Text('{enum_value}'))" for enum_value in enum_values])
+            if matching_enum:
+              text_form_field_lines.append(
+                  f"""
+                  DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: '{snake_to_title_case(column.column_name.snake)}'),
+                  value: current{column.column_name.cap_camel},
+                  onChanged: (String? newValue) {{
+                      current{column.column_name.cap_camel} = newValue;
+                  }},
+                  items: {matching_enum.enum_name.cap_camel}.all.map(({matching_enum.enum_name.camel}) {{
+                    return DropdownMenuItem(
+                      value: {matching_enum.enum_name.camel},
+                      child: Text({matching_enum.enum_name.camel}),
+                    );
+                  }}).toList(),
+                  hint: const Text('Select {snake_to_title_case(column.column_name.snake)}'),
+                  ),
+                  """
+              )
 
 
         if column.sql_type == "text":
