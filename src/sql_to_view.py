@@ -294,189 +294,201 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
     ###############################################
 
     dart_class = f"""
-import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:{project_name}/models/{snake_table_name}_model.dart';
-import 'package:{project_name}/providers/{snake_table_name}_provider.dart';
-
-{import_providers_str}
-
-{import_sql_enums_dart_classes_str}
-
-
-
-
-class {capitalized_camel_table_name}View extends HookConsumerWidget {{
-  static const routeName = '/{snake_table_name}';
-
-  const {capitalized_camel_table_name}View({{super.key}});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {{
-    final {camel_table_name}AsyncValue = ref.watch({camel_table_name}Provider);
-    final {camel_table_name} = useState<List<{capitalized_camel_table_name}Model>>([]);
-
-    useEffect(() {{
-      {camel_table_name}.value = {camel_table_name}AsyncValue.maybeWhen(
-        data: (values) => values,
-        orElse: () => [],
-      );
-      return null;
-    }}, [{camel_table_name}AsyncValue]);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('{snake_to_title_case(snake_table_name)}'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {{
-              // ignore: unused_result
-              ref.refresh({camel_table_name}Provider.future);
-            }},
+    import 'package:flutter/material.dart';
+    import 'package:flutter_hooks/flutter_hooks.dart';
+    import 'package:hooks_riverpod/hooks_riverpod.dart';
+    import 'package:{project_name}/models/{snake_table_name}_model.dart';
+    import 'package:{project_name}/providers/{snake_table_name}_provider.dart';
+    
+    {import_providers_str}
+    
+    {import_sql_enums_dart_classes_str}
+    
+    class {capitalized_camel_table_name}View extends HookConsumerWidget {{
+      static const routeName = '/{snake_table_name}';
+    
+      const {capitalized_camel_table_name}View({{super.key}});
+    
+      @override
+      Widget build(BuildContext context, WidgetRef ref) {{
+        final {camel_table_name}AsyncValue = ref.watch({camel_table_name}Provider);
+        final {camel_table_name} = useState<List<{capitalized_camel_table_name}Model>>([]);
+    
+        useEffect(() {{
+          {camel_table_name}.value = {camel_table_name}AsyncValue.maybeWhen(
+            data: (values) => values,
+            orElse: () => [],
+          );
+          return null;
+        }}, [{camel_table_name}AsyncValue]);
+    
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('{snake_to_title_case(snake_table_name)}'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () {{
+                  // ignore: unused_result
+                  ref.refresh({camel_table_name}Provider.future);
+                }},
+              ),
+            ],
           ),
-        ],
-      ),
-      body: {camel_table_name}AsyncValue.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
-        data: (values) {{
-          return ListView.separated(
-            separatorBuilder: (context, index) => const Divider(),
-            itemCount: {camel_table_name}.value.length,
-            itemBuilder: (context, index) {{
-              final value = {camel_table_name}.value[index];
-              return Dismissible(
-                key: Key(value.id.toString()),
-                direction: DismissDirection.endToStart,
-                background: Container(
-                  color: Colors.red,
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: const Icon(Icons.delete, color: Colors.white),
-                ),
-                confirmDismiss: (direction) async {{
-                
-                  bool? confirmDelete = await showDialog<bool>(
-                    context: context,
-                    builder: (BuildContext context) {{
-                      return AlertDialog(
-                        title: const Text('Confirm Deletion'),
-                        content:
-                            const Text('Are you sure you want to delete this?'),
-                        actions: <Widget>[
-                          TextButton(
-                            child: const Text('Cancel'),
-                            onPressed: () {{
-                              Navigator.of(context).pop(false);
-                            }},
-                          ),
-                          TextButton(
-                            child: const Text('Delete'),
-                            onPressed: () {{
-                              Navigator.of(context).pop(true);
-                            }},
-                          ),
-                        ],
+          body: {camel_table_name}AsyncValue.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(child: Text('Error: $error')),
+            data: (values) {{
+              return ListView.separated(
+                separatorBuilder: (context, index) => const Divider(),
+                itemCount: {camel_table_name}.value.length,
+                itemBuilder: (context, index) {{
+                  final value = {camel_table_name}.value[index];
+                  return Dismissible(
+                    key: Key(value.id.toString()),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    confirmDismiss: (direction) async {{
+                      bool? confirmDelete = await showDialog<bool>(
+                        context: context,
+                        builder: (BuildContext context) {{
+                          return AlertDialog(
+                            title: const Text('Confirm Deletion'),
+                            content: const Text('Are you sure you want to delete this?'),
+                            actions: <Widget>[
+                              TextButton(
+                                child: const Text('Cancel'),
+                                onPressed: () {{
+                                  Navigator.of(context).pop(false);
+                                }},
+                              ),
+                              TextButton(
+                                child: const Text('Delete'),
+                                onPressed: () {{
+                                  Navigator.of(context).pop(true);
+                                }},
+                              ),
+                            ],
+                          );
+                        }},
                       );
+                      return confirmDelete;
                     }},
-                  );
-                  return confirmDelete;
-                }},
-
-                onDismissed: (direction) async {{
-                  {camel_table_name}.value = List.from({camel_table_name}.value)..removeAt(index);
-                  await ref.read({camel_table_name}Provider.notifier).delete(value.id);
-                }},
-                child: ListTile(
-                  title: const Text("{snake_table_name}"),
-                  subtitle: const Text("subtitle"),
-                  onTap: () async {{
-                    await showDialog<bool>(
-                      context: context,
-                      builder: (BuildContext context) {{
-                        return _{capitalized_camel_table_name}Dialog(
+                    onDismissed: (direction) async {{
+                      {camel_table_name}.value = List.from({camel_table_name}.value)..removeAt(index);
+                      await ref.read({camel_table_name}Provider.notifier).delete(value.id);
+                    }},
+                    child: ListTile(
+                      title: const Text("{snake_table_name}"),
+                      subtitle: const Text("subtitle"),
+                      onTap: () async {{
+                        await showModalBottomSheet<bool>(
+                          isScrollControlled: true,
                           context: context,
-                          {edit_button_params_str}
+                          builder: (BuildContext context) {{
+                            return _{capitalized_camel_table_name}Modal(
+                              context: context,
+                              {edit_button_params_str}
+                            );
+                          }},
                         );
                       }},
-                    );
-                  }},
-                ),
+                    ),
+                  );
+                }},
               );
             }},
-          );
-        }},
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {{
-          await showDialog<bool>(
-            context: context,
-            builder: (BuildContext context) {{
-              return _{capitalized_camel_table_name}Dialog(
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () async {{
+              await showModalBottomSheet<bool>(
+                isScrollControlled: true,
                 context: context,
+                builder: (BuildContext context) {{
+                  return _{capitalized_camel_table_name}Modal(
+                    context: context,
+                  );
+                }},
               );
             }},
-          );
-        }},
-        child: const Icon(Icons.add),
-      ),
-    );
-  }}
-}}
-
-
-
-class _{capitalized_camel_table_name}Dialog extends ConsumerWidget {{
-  final BuildContext context;
-  {dialog_properties_str}
-
-  const _{capitalized_camel_table_name}Dialog({{
-    required this.context,
-    {constructor_params_str}
-  }});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {{
-    {build_vars_str}
-
-    {build_controller_str}
-
-    {build_providers_str}
-
-    return AlertDialog(
-      title: Text(initialId == null
-          ? 'Add {snake_to_title_case(snake_table_name)[:-1]}'
-          : 'Edit {snake_to_title_case(snake_table_name)[:-1]}'),
-      content: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-        {text_form_fields_str}
-        ])),
-      actions: <Widget>[
-        TextButton(
-          child: const Text('Cancel'),
-          onPressed: () {{
-            Navigator.of(context).pop(false);
-          }},
-        ),
-        TextButton(
-          child: const Text('Save'),
-          onPressed: () async {{
-            await ref
-                .read({camel_table_name}Provider.notifier)
-                .upsert({capitalized_camel_table_name}Model(
-                  {dialog_on_save_params_str}
-                ));
-            Navigator.of(context).pop(true);
-          }},
-        ),
-      ],
-    );
-  }}
-}}
-"""
-
+            child: const Icon(Icons.add),
+          ),
+        );
+      }}
+    }}
+    
+    class _{capitalized_camel_table_name}Modal extends ConsumerWidget {{
+      final BuildContext context;
+      {dialog_properties_str}
+    
+      const _{capitalized_camel_table_name}Modal({{
+        required this.context,
+        {constructor_params_str}
+      }});
+    
+      @override
+      Widget build(BuildContext context, WidgetRef ref) {{
+        final isEdit = initialId != null;
+        {build_vars_str}
+    
+        {build_controller_str}
+    
+        {build_providers_str}
+    
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: FractionallySizedBox(
+            heightFactor: 0.9,
+            child: Column(
+              children: [
+                Text(isEdit ? 'Edit' : 'Add', style: Theme.of(context).textTheme.titleLarge),
+                SizedBox(height: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        {text_form_fields_str}
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    TextButton(
+                      child: const Text('Cancel'),
+                      onPressed: () {{
+                        Navigator.of(context).pop(false);
+                      }},
+                    ),
+                    TextButton(
+                      child: const Text('Save'),
+                      onPressed: () async {{
+                        await ref.read({camel_table_name}Provider.notifier).upsert(
+                          {capitalized_camel_table_name}Model(
+                            {dialog_on_save_params_str}
+                          )
+                        );
+                        Navigator.of(context).pop(true);
+                      }},
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      }}
+    }}
+    """
+    
     output_file = os.path.join(views_directory, f"{snake_table_name}_view.dart")
 
     # Check if the file exists and delete it if it does
