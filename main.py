@@ -4,7 +4,6 @@ import argparse
 from typing import List
 
 from src.sql_to_enum import sqlEnumsToDartClasses
-from src.sql_to_provider_query import sqlToProviderQuery
 from src.classes import Column
 from src.sql_to_view import sqlToView
 from src.sql_to_model import sqlToModel
@@ -78,8 +77,7 @@ for file in os.listdir(sqls_directory):
                 print(f"\n\n>> create table statement: \n\n{statement}")
                 table_columns: List[Column] = parse_table_columns(statement, content, enums) or []
 
-                # sqlToModel(table_columns, models_directory, PROJECT_NAME)
-                # sqlToProvider(statement, providers_directory, PROJECT_NAME)
-                # sqlToProviderQuery(table_columns, providers_directory)
-                # sqlToView(table_columns, views_directory, PROJECT_NAME, enums)
+                sqlToModel(table_columns, models_directory, PROJECT_NAME)
+                sqlToProvider(table_columns, providers_directory, PROJECT_NAME)
+                sqlToView(table_columns, views_directory, PROJECT_NAME, enums)
                 sqlEnumsToDartClasses(enums, enums_directory)

@@ -1,12 +1,10 @@
-import os
 from typing import List
 
 from src.classes import Column, NameVariant
-from src.utils import get_foreign_detail_column_name, write_to_file
+from src.utils import get_foreign_detail_column_name
 
 
-def sqlToProviderQuery(table_columns: List[Column], providers_folder: str):
-    snake_table_name = table_columns[0].table_name.snake
+def sqlToProviderQuery(table_columns: List[Column]):
     camel_table_name = table_columns[0].table_name.camel
 
     related_columns = [col for col in table_columns if col.related_table_name.snake and col.column_name.snake != "user_id"]
@@ -28,8 +26,9 @@ const {camel_table_name}Query = '''
 {related_queries_str}
 ''';
 """
+    return content
 
-    file_path = os.path.join(
-        providers_folder, f"{snake_table_name}_provider_query.dart"
-    )
-    write_to_file(file_path, content)
+    # file_path = os.path.join(
+    #     providers_folder, f"{snake_table_name}_provider_query.dart"
+    # )
+    # write_to_file(file_path, content)

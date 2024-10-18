@@ -26,9 +26,9 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
     text_form_field_columns: List[Column] = [] # exclude id and user_id
 
     import_provider_columns: List[Column] = [] # include related tables, exclude user_id
-    # edit_button_param_columns: List[Column] = []
-    # edit_button_param_column_includes = []
-    # edit_button_param_column_excludes = [r"id"]
+
+    import_sql_enums_dart_classes_columns: List[SqlEnum] = [] # include enums
+
 
     for column in table_columns:
 
@@ -52,6 +52,11 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
 
         if column.column_name.snake != "id" and related_table_name != "auth.users":
             text_form_field_columns.append(column)
+
+        if column.is_enum:
+            matching_enum = next((enum for enum in enums if column.sql_type == enum.enum_name.snake), None)
+            if matching_enum:
+                import_sql_enums_dart_classes_columns.append(matching_enum)
 
 
     # construct dialog properties
@@ -115,6 +120,16 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
     import_provider_lines = list(set(import_provider_lines))
     import_providers_str = "\n".join(import_provider_lines)
 
+    # construct import sql enums dart classes
+    import_sql_enums_dart_classes_lines:List[str] = []
+    for enum in import_sql_enums_dart_classes_columns:
+        import_sql_enums_dart_classes_lines.append(
+            f"import 'package:{project_name}/sql_enums_dart_classes/{enum.enum_name.snake}_class.dart';"
+        )
+    # Remove duplicates
+    import_sql_enums_dart_classes_lines = list(set(import_sql_enums_dart_classes_lines))
+    import_sql_enums_dart_classes_str = "\n".join(import_sql_enums_dart_classes_lines)
+
     # construct TextFormFields for each column
     text_form_field_lines:List[str] = []
     for column in text_form_field_columns:
@@ -173,12 +188,6 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
         if column.is_enum:
             matching_enum = next((enum for enum in enums if column.sql_type == enum.enum_name.snake), None)
 
-            # enum_values:List[str] = []
-            # for enum in enums:
-            #     if column.sql_type == enum.enum_name.snake:
-            #         enum_values = enum.enum_values
-
-            # dropdown_items_str = ",\n".join([f"DropdownMenuItem(value: '{enum_value}', child: Text('{enum_value}'))" for enum_value in enum_values])
             if matching_enum:
               text_form_field_lines.append(
                   f"""
@@ -292,6 +301,8 @@ import 'package:{project_name}/models/{snake_table_name}_model.dart';
 import 'package:{project_name}/providers/{snake_table_name}_provider.dart';
 
 {import_providers_str}
+
+{import_sql_enums_dart_classes_str}
 
 
 

@@ -65,7 +65,9 @@ def sqlToModel(table_columns: List[Column], models_directory: str, project_name:
     model_name = (
         "".join([word.capitalize() for word in snake_table_name.split("_")]) + "Model"
     )
-
+    
+    # Remove duplicates while maintaining order
+    import_related_model_lines = list(dict.fromkeys(import_related_model_lines))
     import_related_models_str = "\n".join(import_related_model_lines)
 
     dart_model = f"""
