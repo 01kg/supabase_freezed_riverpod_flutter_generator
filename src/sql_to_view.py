@@ -341,8 +341,12 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
             data: (values) {{
               return ListView.separated(
                 separatorBuilder: (context, index) => const Divider(),
-                itemCount: {camel_table_name}.value.length,
+                itemCount: {camel_table_name}.value.length + 1,
                 itemBuilder: (context, index) {{
+                  if (index == {camel_table_name}.value.length) {{
+                    return const SizedBox(
+                        height: 70, child: Center(child: Text('The End')));
+                  }}
                   final value = {camel_table_name}.value[index];
                   return Dismissible(
                     key: Key(value.id.toString()),
