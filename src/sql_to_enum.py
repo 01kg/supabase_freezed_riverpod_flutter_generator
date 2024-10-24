@@ -10,6 +10,7 @@ def sqlEnumsToDartClasses(sql_enums: List[SqlEnum], enums_directory: str):
         cap_camel_enum_name = sql_enum.enum_name.cap_camel
         dart_class_name = cap_camel_enum_name
         snake_enum_name = sql_enum.enum_name.snake
+        camel_enum_name = sql_enum.enum_name.camel
 
         # Convert enum values to Dart static variables
         dart_static_vars: List[str] = []
@@ -50,16 +51,20 @@ def sqlEnumsToDartClasses(sql_enums: List[SqlEnum], enums_directory: str):
             {dart_static_vars_str}
             {dart_static_list_str}
 
+
             static {dart_class_name} fromJson(String value) {{
-                return {dart_class_name}._(value);
+            return all.firstWhere(
+                (item) => item.name == value,
+                orElse: () => {dart_class_name}._(value) // Create a new item if no match is found
+            );
             }}
 
-            static String toJson({dart_class_name} {snake_enum_name}) {{
-                return {snake_enum_name}.toString();
+            static String toJson({dart_class_name} {camel_enum_name}) {{
+                return {camel_enum_name}.name;
             }}
 
             static {dart_class_name} fromString(String value) {{
-                return {dart_class_name}.fromJson(value);
+                return fromJson(value);
             }}
 
 

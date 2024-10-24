@@ -78,6 +78,6 @@ for file in os.listdir(sqls_directory):
                 table_columns: List[Column] = parse_table_columns(statement, content, enums) or []
 
                 sqlToModel(table_columns, models_directory, PROJECT_NAME, enums)
-                sqlToProvider(table_columns, providers_directory, PROJECT_NAME)
-                sqlToView(table_columns, views_directory, PROJECT_NAME, enums)
-                sqlEnumsToDartClasses(enums, enums_directory)
+                # sqlToProvider(table_columns, providers_directory, PROJECT_NAME)
+                # sqlToView(table_columns, views_directory, PROJECT_NAME, enums)
+                # sqlEnumsToDartClasses(enums, enums_directory)

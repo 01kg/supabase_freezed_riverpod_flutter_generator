@@ -44,7 +44,7 @@ def sqlToModel(table_columns: List[Column], models_directory: str, project_name:
                 dart_type = f"{dart_class_name}"
                 json_key_content += f"{', 'if json_key_content else ''}fromJson: {dart_class_name}.fromJson, toJson: {dart_class_name}.toJson"
 
-        json_key = f"@JsonKey({json_key_content})"
+        json_key = f"@JsonKey({json_key_content})" if json_key_content else ""
 
         model_attritute_lines.append(f"{json_key} {required_mark} {dart_type}{question_mark} {camel_column_name},")
 
