@@ -199,8 +199,8 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
                   }},
                   items: {matching_enum.enum_name.cap_camel}.all.map(({matching_enum.enum_name.camel}) {{
                     return DropdownMenuItem(
-                      value: {matching_enum.enum_name.camel},
-                      child: Text({matching_enum.enum_name.camel}),
+                      value: {matching_enum.enum_name.camel}.toString(),
+                      child: Text({matching_enum.enum_name.camel}.toString()),
                     );
                   }}).toList(),
                   hint: const Text('Select {snake_to_title_case(column.column_name.snake)}'),
@@ -261,6 +261,12 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
             dialog_on_save_controller_param_lines.append(
                 f"{column.column_name.camel}: ref.read({camel_table_name}Provider.notifier).getUserId()!,"
             )
+        elif column.is_enum:
+            matching_enum = next((enum for enum in enums if column.sql_type == enum.enum_name.snake), None)
+            if matching_enum:
+                dialog_on_save_controller_param_lines.append(
+                    f"{column.column_name.camel}: {matching_enum.enum_name.cap_camel}.fromString({column.column_name.camel}Controller.text),"
+                )
         elif column.dart_type == "String":
             dialog_on_save_controller_param_lines.append(
                 f"{column.column_name.camel}: {column.column_name.camel}Controller.text,"
@@ -286,7 +292,7 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
     edit_button_param_lines:List[str]= []
     for column in edit_button_param_columns:
         edit_button_param_lines.append(
-            f"initial{column.column_name.cap_camel}: value.{column.column_name.camel},"
+            f"initial{column.column_name.cap_camel}: value.{column.column_name.camel}{'.toString()' if column.is_enum else ''},"
         )
     edit_button_params_str = "\n".join(edit_button_param_lines)
 

@@ -1,11 +1,11 @@
 import os
 from typing import List
 
-from src.classes import Column
+from src.classes import Column, SqlEnum
 from src.utils import snake_to_camel
 
 
-def sqlToModel(table_columns: List[Column], models_directory: str, project_name: str):
+def sqlToModel(table_columns: List[Column], models_directory: str, project_name: str, enums: List[SqlEnum]=[]):
     snake_table_name = table_columns[0].table_name.snake
 
 
@@ -32,7 +32,19 @@ def sqlToModel(table_columns: List[Column], models_directory: str, project_name:
         #     elif (col_type.startswith("bigint") or col_type.startswith("real") or col_type.startswith("double")):
         #         default_value_str = "@Default(0)"
 
-        json_key = f"@JsonKey(name: '{snake_column_name}')" if "_" in snake_column_name else ""
+        json_key_content = f"name: '{snake_column_name}'" if "_" in snake_column_name else ""
+
+        if column.is_enum:
+            matching_enum = next((enum for enum in enums if column.sql_type == enum.enum_name.snake), None)
+
+            if matching_enum:
+                dart_class_name = matching_enum.enum_name.cap_camel
+                import_enum = f"import 'package:{project_name}/sql_enums_dart_classes/{matching_enum.enum_name.snake}_class.dart';"
+                import_related_model_lines.append(import_enum)
+                dart_type = f"{dart_class_name}"
+                json_key_content += f"{', 'if json_key_content else ''}fromJson: {dart_class_name}.fromJson, toJson: {dart_class_name}.toJson"
+
+        json_key = f"@JsonKey({json_key_content})"
 
         model_attritute_lines.append(f"{json_key} {required_mark} {dart_type}{question_mark} {camel_column_name},")
 

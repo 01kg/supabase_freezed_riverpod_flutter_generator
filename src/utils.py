@@ -83,7 +83,7 @@ def parse_table_columns(sql_create_table_statement: str, whole_sql_content: str=
         "bigint": "int",
         "date": "String",
         "real": "double",
-        "double": "double",
+        "float8": "double",
         "text": "String",
         "uuid": "String",
     }
