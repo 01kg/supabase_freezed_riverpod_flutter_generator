@@ -233,6 +233,7 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
         if (
             column.sql_type == "real"
             or column.sql_type == "double"
+            or column.sql_type == "float8"
             or (column.sql_type == "bigint" and not column.column_name.snake.endswith("_id"))
         ):
             text_form_field_lines.append(
