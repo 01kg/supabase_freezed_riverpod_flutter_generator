@@ -415,6 +415,7 @@ def sqlToView(table_columns: List[Column],  views_directory: str, project_name: 
             }},
           ),
           floatingActionButton: FloatingActionButton(
+            heroTag: "{snake_table_name}_float_button_tag",
             onPressed: () async {{
               await showModalBottomSheet<bool>(
                 isScrollControlled: true,
