@@ -41,10 +41,6 @@ class {cap_camel_table_name} extends _${cap_camel_table_name} {{
     return response.map({cap_camel_table_name}Model.fromJson).toList();
   }}
 
-  String? getUserId() {{
-    return supabase.auth.currentUser?.id;
-  }}
-
   Future<void> upsert({cap_camel_table_name}Model type) async {{
     await supabase
         .from('{snake_table_name}')
